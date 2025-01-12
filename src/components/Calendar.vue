@@ -13,13 +13,7 @@ interface Availability {
   available: boolean;
 }
 
-// Estados
-const weekDays = ['Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo']
-const timeSlots = [
-  '09:00', '10:00', '11:00', '12:00', '13:00', '14:00',
-  '15:00', '16:00', '17:00', '18:00', '19:00', '20:00',
-  '21:00', '22:00'
-]
+
 const availabilityData = ref<Availability[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
@@ -34,9 +28,17 @@ const getWeekStartDate = (date: Date) => {
 }
 
 // Formatear fecha para la API
-const formatDateForAPI = (date: Date) => {
+/*const formatDateForAPI = (date: Date) => {
   return date.toISOString().split('T')[0]
-}
+}*/
+
+const formatDateForAPI = (date: Date): string => {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = date.getFullYear();
+
+  return `${day}-${month}-${year}`;
+};
 
 // Obtener disponibilidad de la semana
 const fetchWeekAvailability = async () => {
@@ -104,11 +106,23 @@ const handleCellClick = (day: string, time: string) => {
     alert('Este horario no está disponible')
   }
 }
-
+const hoveredIndex = ref(null);
+const timeSlots = [
+  { time: '09:00', status: 'disponible' },
+  { time: '10:00', status: 'reservada' },
+  { time: '11:00', status: 'reservada' },
+  { time: '12:00', status: 'disponible' },
+  { time: '13:00', status: 'disponible' },
+  { time: '14:00', status: 'disponible' },
+  { time: '15:00', status: 'disponible' },
+  { time: '16:00', status: 'disponible' },
+];
 // Cargar datos iniciales
 onMounted(() => {
   fetchWeekAvailability()
 })
+
+
 </script>
 
 <template>
@@ -120,11 +134,11 @@ onMounted(() => {
           class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded"
           :disabled="isLoading"
       >
-        ← Semana anterior
+        < Día anterior
       </button>
 
       <h2 class="text-2xl font-bold text-gray-800 text-center">
-        {{ formatDateForAPI(getWeekStartDate(currentWeek)) }}
+        {{ formatDateForAPI(currentWeek) }}
       </h2>
 
       <button
@@ -132,7 +146,7 @@ onMounted(() => {
           class="px-4 py-2 bg-gray-100 hover:bg-gray-200 rounded"
           :disabled="isLoading"
       >
-        Semana siguiente →
+        Día siguiente >
       </button>
     </div>
 
@@ -141,61 +155,59 @@ onMounted(() => {
       <p class="text-gray-600">Cargando disponibilidad...</p>
     </div>
 
-    <!-- Mensaje de error -->
-    <div v-else-if="error" class="text-center py-8">
-      <p class="text-red-600">{{ error }}</p>
-      <button
-          @click="fetchWeekAvailability"
-          class="mt-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-      >
-        Reintentar
-      </button>
-    </div>
-
-    <!-- Tabla de disponibilidad -->
-    <div v-else class="overflow-x-auto">
-      <table class="w-full border-collapse">
-        <thead>
-        <tr>
-          <th class="sticky left-0 bg-white border-b-2 border-gray-200 p-3 text-gray-600">
+    <div class="max-w-md mx-auto">
+      <div class="grid grid-cols-2 gap-2">
+        <!-- Time Column -->
+        <div class="rounded-lg overflow-hidden">
+          <div class="bg-gray-50 p-4 font-medium text-gray-900 border-b">
             Hora
-          </th>
-          <th
-              v-for="day in weekDays"
-              :key="day"
-              class="border-b-2 border-gray-200 p-3 min-w-[120px] text-gray-600 font-semibold"
-          >
-            {{ day }}
-          </th>
-        </tr>
-        </thead>
-
-        <tbody>
-        <tr v-for="time in timeSlots" :key="time" class="hover:bg-gray-50">
-          <td class="sticky left-0 bg-white border-b border-gray-200 p-3 font-medium text-gray-700 text-center">
-            {{ time }}
-          </td>
-          <td
-              v-for="day in weekDays"
-              :key="`${day}-${time}`"
-              @click="handleCellClick(day, time)"
-              class="border-b border-gray-200 p-3 text-sm transition-all duration-200"
-              :class="[
-                isAvailable(day, time)
-                  ? 'bg-emerald-50 hover:bg-emerald-100 cursor-pointer text-emerald-700'
-                  : 'bg-red-50 text-red-700'
+          </div>
+          <div class="divide-y">
+            <template v-for="(slot, index) in timeSlots" :key="index">
+              <div
+                  class="p-4 transition-colors duration-200"
+                  :class="[
+                slot.status === 'reservada'
+                  ? 'bg-orange-500 text-white'
+                  : {
+                      'bg-sky-100': !hoveredIndex || hoveredIndex !== index,
+                      'bg-sky-800 text-white': hoveredIndex === index
+                    }
               ]"
-          >
-            <div class="flex items-center justify-center gap-2">
-                <span class="w-2 h-2 rounded-full"
-                      :class="isAvailable(day, time) ? 'bg-emerald-500' : 'bg-red-500'">
-                </span>
-              {{ isAvailable(day, time) ? 'Disponible' : 'Ocupado' }}
-            </div>
-          </td>
-        </tr>
-        </tbody>
-      </table>
+              >
+                {{ slot.time }}
+              </div>
+            </template>
+          </div>
+        </div>
+
+        <!-- Status Column -->
+        <div class="rounded-lg overflow-hidden">
+          <div class="bg-gray-50 p-4 font-medium text-gray-900 border-b">
+            Estado
+          </div>
+          <div class="divide-y">
+            <template v-for="(slot, index) in timeSlots" :key="index">
+              <div
+                  class="p-4 transition-colors duration-200 cursor-pointer"
+                  :class="[
+                slot.status === 'reservada'
+                  ? 'bg-orange-500 text-white cursor-default'
+                  : {
+                      'bg-sky-100': !hoveredIndex || hoveredIndex !== index,
+                      'bg-sky-800 text-white': hoveredIndex === index,
+                    }
+              ]"
+                  @mouseenter="hoveredIndex = index"
+                  @mouseleave="hoveredIndex = null"
+              >
+                {{ slot.status === 'reservada' ? 'Reservada' : 'Disponible' }}
+              </div>
+            </template>
+          </div>
+        </div>
+      </div>
     </div>
+
   </div>
 </template>
