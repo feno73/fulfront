@@ -21,12 +21,13 @@ export const availabilityService = {
         }
     },
 
-    // TODO: Crear una nueva reserva
-    createReservation: async (date: string, time: string) => {
+    createReservation: async (data: object) => {
         try {
-            const response = await api.post('/reservations', {
-                date,
-                time
+            console.log("Data:", data)
+            const response = await api.post('/v1/reservas', {
+                usuarioId: data.usuario,
+                canchaId: data.cancha,
+                fecha: data.fecha
             })
             return response.data
         } catch (error) {
