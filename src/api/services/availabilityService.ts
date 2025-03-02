@@ -5,6 +5,11 @@ export interface Availability {
     time: string
     available: boolean
 }
+export interface ReservationFormData {
+  usuario: number
+  cancha: number
+  fecha: string
+}
 
 export const availabilityService = {
     // Obtener disponibilidad de la semana
@@ -21,7 +26,8 @@ export const availabilityService = {
         }
     },
 
-    createReservation: async (data: object) => {
+    // Crear una reserva
+    createReservation: async (data: ReservationFormData) => {
         try {
             console.log("Data:", data)
             const response = await api.post('/v1/reservas', {

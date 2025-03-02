@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
-import { availabilityService } from '../api/services/availabilityService.ts'
+import { availabilityService, ReservationFormData } from '../api/services/availabilityService.ts'
 import ReservationModal from './ReservationModal.vue'  // Importamos el nuevo componente
 
 interface Availability {
@@ -70,9 +70,13 @@ const openReservationModal = (slot: Availability) => {
     showModal.value = true;
   }
 }
+const closeModalAndRefetch = () => {
+  showModal.value = false;
+  fetchAvailability();
+}
 
 // Función para manejar el submit del modal
-const handleReservationSubmit = (reservationData: { usuario: string, cancha: string, fecha: string }) => {
+const handleReservationSubmit = (reservationData: { data: ReservationFormData }) => {
   console.log("Reserva realizada:", reservationData);
   // Aquí se enviaría la reserva a la API
 }
@@ -138,7 +142,7 @@ onMounted(() => {
         :visible="showModal"
         :selectedDate="formatDateForAPI(selectedDate)"
         :selectedTime="selectedTime"
-        @close="showModal = false"
+        @close="closeModalAndRefetch()"
         @submit="handleReservationSubmit"
     />
   </div>

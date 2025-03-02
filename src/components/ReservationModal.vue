@@ -52,14 +52,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, defineEmits } from 'vue'
-import { availabilityService } from "../api/services/availabilityService.ts"
-
-interface ReservationFormData {
-  usuario: number
-  cancha: number
-  fecha: string
-}
+import { ref, watch } from 'vue'
+import { availabilityService, ReservationFormData } from "../api/services/availabilityService.ts"
 
 const props = defineProps<{
   visible: boolean
@@ -88,13 +82,21 @@ watch(
 
 const closeModal = () => {
   emits('close')
+
 }
 
-const handleSubmit = () => {
-  // Aquí se podría enviar la reserva a la API
-  emits('submit', availabilityService.createReservation(formData.value))
-  console.log("FormData:", formData.value)
-
-  closeModal()
+const handleSubmit = async () => {
+  try {
+    const res = await availabilityService.createReservation({
+      usuario: formData.value.usuario,
+      cancha: formData.value.cancha,
+      fecha: formData.value.fecha
+    });
+    emits('submit', res)
+    console.log("Respuesta de reserva:", res);
+    closeModal()
+  } catch (error) {
+    console.error("Error during the reservation:", error);
+  }
 }
 </script>
