@@ -1,21 +1,22 @@
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { availabilityService, ReservationFormData } from '../api/services/availabilityService.ts'
-import ReservationModal from './ReservationModal.vue'  // Importamos el nuevo componente
+import ReservationModal from './ReservationModal.vue'
+import { Availability } from "../interfaces/IAvailability.ts"
 
-interface Availability {
-  day: string
-  time: string
-  available: boolean
-}
-
+// Datos de disponibilidad y estados
 const availabilityData = ref<Availability[]>([])
 const isLoading = ref(true)
 const error = ref<string | null>(null)
-// Variable que almacena la fecha seleccionada (por defecto hoy)
 const selectedDate = ref(new Date())
 
-// Función para formatear la fecha a "YYYY-MM-DD"
+interface Props {
+  isLoggedIn: boolean
+}
+
+const props = defineProps<Props>()
+
+// Función para formatear la fecha al formato requerido por la API
 const formatDateForAPI = (date: Date): string => {
   const year = date.getFullYear()
   const month = (date.getMonth() + 1).toString().padStart(2, '0')
@@ -23,10 +24,9 @@ const formatDateForAPI = (date: Date): string => {
   return `${year}-${month}-${day}`
 }
 
-// Propiedad computada para filtrar la disponibilidad del día seleccionado
+// Filtrar la disponibilidad para la fecha seleccionada
 const availabilityForSelectedDate = computed(() => {
   const selectedDay = formatDateForAPI(selectedDate.value)
-  // La API devuelve la propiedad "day", por eso se compara con slot.day
   return availabilityData.value.filter(slot => slot.day === selectedDay)
 })
 
@@ -51,11 +51,11 @@ const fetchAvailability = async () => {
 
 // Manejar el cambio del datepicker
 const onDateChange = (event: Event) => {
-  const target = event.target as HTMLInputElement;
+  const target = event.target as HTMLInputElement
   if (target.value) {
-    const [year, month, day] = target.value.split('-').map(Number);
-    selectedDate.value = new Date(year, month - 1, day);
-    fetchAvailability();
+    const [year, month, day] = target.value.split('-').map(Number)
+    selectedDate.value = new Date(year, month - 1, day)
+    fetchAvailability()
   }
 }
 
@@ -63,24 +63,38 @@ const onDateChange = (event: Event) => {
 const showModal = ref(false)
 const selectedTime = ref('')
 
-// Función para abrir el modal al hacer click en un horario disponible
+// Función que abre el modal (si el slot está disponible)
 const openReservationModal = (slot: Availability) => {
   if (slot.available) {
-    selectedTime.value = slot.time;
-    showModal.value = true;
+    selectedTime.value = slot.time
+    showModal.value = true
   }
 }
+
+// Función para manejar el clic en un horario disponible
+const handleSlotClick = (slot: Availability) => {
+  if (props.isLoggedIn) {
+    openReservationModal(slot)
+  } else {
+    // Si el usuario no está logueado, se muestra solo la información
+    // Aquí podrías redirigir al login o mostrar un mensaje personalizado
+    alert("Debes iniciar sesión para hacer una reserva.")
+  }
+}
+
+// Función para cerrar el modal y recargar la disponibilidad
 const closeModalAndRefetch = () => {
-  showModal.value = false;
-  fetchAvailability();
+  showModal.value = false
+  fetchAvailability()
 }
 
 // Función para manejar el submit del modal
-const handleReservationSubmit = (reservationData: { data: ReservationFormData }) => {
-  console.log("Reserva realizada:", reservationData);
+const handleReservationSubmit = (payload: ReservationFormData) => {
+  console.log("Reserva realizada:", payload)
   // Aquí se enviaría la reserva a la API
 }
 
+// Cargar la disponibilidad al montar el componente
 onMounted(() => {
   fetchAvailability()
 })
@@ -122,7 +136,7 @@ onMounted(() => {
           <li
               v-for="(slot, index) in availabilityForSelectedDate"
               :key="index"
-              @click="openReservationModal(slot)"
+              @click="handleSlotClick(slot)"
               class="cursor-pointer hover:bg-gray-100 p-2 border-b"
           >
             {{ slot.time }} -
@@ -137,12 +151,12 @@ onMounted(() => {
       </div>
     </div>
 
-    <!-- Modal de Reserva -->
+    <!-- Modal de Reserva (se activa solo si el usuario está logueado) -->
     <ReservationModal
         :visible="showModal"
         :selectedDate="formatDateForAPI(selectedDate)"
         :selectedTime="selectedTime"
-        @close="closeModalAndRefetch()"
+        @close="closeModalAndRefetch"
         @submit="handleReservationSubmit"
     />
   </div>

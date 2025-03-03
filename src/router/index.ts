@@ -2,7 +2,9 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Home from '../views/Home.vue'
 import Reservations from '../views/Reservations.vue'
 import Login from '../views/Login.vue'
-import ReservationForm from '../views/ReservationForm.vue'
+import AdminDashboard from '../views/AdminDashboard.vue'
+import ReservationsAdmin from '../components/Dashboard/Reservations.vue'
+import UsersAdmin from '../components/Dashboard/Users.vue'
 
 const router = createRouter({
   history: createWebHistory(),
@@ -23,9 +25,21 @@ const router = createRouter({
       component: Login
     },
     {
-      path: '/reservation-form/:date/:time',
-      name: 'reservation-form',
-      component: ReservationForm
+      path: '/admin',
+      name: 'admin',
+      component: AdminDashboard,
+      children: [
+          {
+              path: '/reservas',
+              name: 'reservas',
+              component: ReservationsAdmin
+          },
+          {
+              path: '/usuarios',
+              name: 'usuarios',
+              component: UsersAdmin
+          }
+      ]
     }
   ]
 })
